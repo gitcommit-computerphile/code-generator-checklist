@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Optional
 
 from agents import RunContextWrapper, function_tool
 
+from src.files import save_code_to_disk
 from src.models import Checklist
 
 
@@ -10,6 +12,8 @@ from src.models import Checklist
 class PipelineContext:
     checklist: Checklist
     current_task_id: Optional[int] = None
+    save_dir: Optional[str] = None
+    saved_path: Optional[Path] = None
     on_update: Optional[Callable[[Checklist], None]] = None
 
 
@@ -48,3 +52,19 @@ def mark_task_done(ctx: RunContextWrapper[PipelineContext], summary: str) -> str
                 ctx.context.on_update(checklist)
             return f"Task {task_id} marked as done."
     return "Error: no active task to mark done."
+
+
+@function_tool
+def save_code_to_file(ctx: RunContextWrapper[PipelineContext], code: str) -> str:
+    """Save the given code to disk. Only call this if the user's request explicitly
+    asked for the code to be saved/written to a file. A save directory may or may
+    not be configured; if it isn't, this will tell you so.
+
+    Args:
+        code: The complete, final code to save.
+    """
+    if not ctx.context.save_dir:
+        return "No save directory is configured for this session — do not retry, just skip saving."
+    path = save_code_to_disk(ctx.context.save_dir, ctx.context.checklist.language, code)
+    ctx.context.saved_path = path
+    return f"Saved code to {path}"

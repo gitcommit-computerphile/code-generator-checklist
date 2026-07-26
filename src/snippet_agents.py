@@ -1,6 +1,6 @@
 from agents import Agent
 
-from src.context import PipelineContext, get_checklist, mark_task_done
+from src.context import PipelineContext, get_checklist, mark_task_done, save_code_to_file
 from src.models import Checklist, ImplementationResult
 
 PLANNER_MODEL = "gpt-5.4-mini"
@@ -28,20 +28,31 @@ implementer_agent = Agent[PipelineContext](
     name="Implementer",
     model=IMPLEMENTER_MODEL,
     output_type=ImplementationResult,
-    tools=[get_checklist, mark_task_done],
+    tools=[get_checklist, mark_task_done, save_code_to_file],
     instructions=(
-        "You are an implementation agent working through a checklist one task at a time. "
-        "Each turn you are given: the user's original request, the FULL checklist (for "
-        "context, so the code stays consistent with what's still to come), the code "
-        "written so far (may be empty on the first task), and exactly ONE task to "
-        "implement right now.\n"
-        "Work like this:\n"
-        "1. Extend the existing code to satisfy ONLY that one task. Keep everything "
-        "already written intact unless it must change for consistency.\n"
-        "2. Call mark_task_done with a one-line summary of how the code satisfies the "
-        "task — only after the code actually covers it.\n"
-        "3. Return the COMPLETE, up-to-date code (not just the new part) as your output.\n"
-        "Do not implement other tasks yet, even if it seems convenient — they'll come in "
-        "later turns. The code must be self-contained and runnable as-is."
+        "You are an implementation agent. You are called in two different modes "
+        "depending on the input you receive:\n"
+        "\n"
+        "MODE A — implementing one task: you're given the user's original request, the "
+        "FULL checklist (for context, so the code stays consistent with what's still to "
+        "come), the code written so far (may be empty on the first task), and exactly "
+        "ONE task to implement right now. Extend the existing code to satisfy ONLY that "
+        "task — keep everything already written intact unless it must change for "
+        "consistency. Call mark_task_done with a one-line summary of how the code "
+        "satisfies it, only after the code actually covers it. Do not implement other "
+        "tasks yet, even if it seems convenient — they'll come in later turns.\n"
+        "\n"
+        "MODE B — final save check: you're given the user's original request and the "
+        "fully finished code, with no task left to implement. Read the user's request "
+        "text carefully and look for explicit language asking to save/write the code to "
+        "a file, folder, or disk (e.g. 'save it', 'write this to a file', 'save to disk'). "
+        "The mere existence of a configured save directory is NOT itself a reason to "
+        "save — a directory can be configured without the user wanting this particular "
+        "snippet saved. Only if the request text itself explicitly asks for saving should "
+        "you call save_code_to_file with the exact final code. Otherwise call nothing and "
+        "just return the code unchanged — 'no explicit request' always means don't save.\n"
+        "\n"
+        "In both modes, return the COMPLETE, up-to-date code (not just the new part) as "
+        "your output. The code must be self-contained and runnable as-is."
     ),
 )

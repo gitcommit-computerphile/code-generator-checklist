@@ -25,6 +25,10 @@ request = st.text_area(
     placeholder="e.g. a python function that fetches a URL with retries and exponential backoff",
     height=100,
 )
+save_dir = st.text_input(
+    "Save to folder (optional)",
+    placeholder=r"e.g. C:\Users\you\snippets — the implementer decides whether to use it",
+)
 generate = st.button("Generate", type="primary", disabled=not request.strip())
 
 status_box = st.empty()
@@ -52,13 +56,22 @@ def show_stage(message: str) -> None:
 if generate:
     try:
         with st.spinner("Running agents…"):
-            checklist, result, summary = asyncio.run(
-                run_pipeline(request, on_update=render_checklist, on_stage=show_stage)
+            checklist, result, summary, saved_path = asyncio.run(
+                run_pipeline(
+                    request,
+                    save_dir=save_dir.strip() or None,
+                    on_update=render_checklist,
+                    on_stage=show_stage,
+                )
             )
         status_box.success("All done!")
         with output_box:
             st.subheader("Generated code")
             st.code(result.code, language=checklist.language)
             st.markdown(summary)
+            if saved_path:
+                st.success(f"Saved to {saved_path}")
+            elif save_dir.strip():
+                st.info("A save folder was provided, but the implementer decided saving wasn't needed.")
     except Exception as exc:  # surface API/agent errors in the UI instead of a stack trace
         status_box.error(f"Pipeline failed: {exc}")
