@@ -11,7 +11,10 @@ planner_agent = Agent(
     model=PLANNER_MODEL,
     output_type=Checklist,
     instructions=(
-        "You are a planning agent. The user wants a code snippet. Break their request "
+        "You are a planning agent, called in two different modes depending on the "
+        "input you receive:\n"
+        "\n"
+        "MODE A — initial draft: the user wants a code snippet. Break their request "
         "into a checklist of 3 to 7 concrete, implementable tasks.\n"
         "- Each task must describe one specific piece of the implementation "
         "(e.g. 'define the function signature with type hints', 'add retry loop with "
@@ -19,8 +22,15 @@ planner_agent = Agent(
         "- Do NOT include tasks about testing, deployment, or documentation unless the "
         "user explicitly asked for them.\n"
         "- Number tasks sequentially starting at 1, all with status 'pending'.\n"
-        "- Set 'language' to the programming language the snippet should be written in "
-        "(infer it from the request; default to python if unclear)."
+        "\n"
+        "MODE B — revise: you're given the original request, the CURRENT checklist, and "
+        "human feedback about it. Produce a revised checklist that addresses the "
+        "feedback exactly. Keep anything the feedback didn't mention unchanged where "
+        "reasonable. Renumber tasks sequentially and reset every status to 'pending' — "
+        "nothing has been implemented yet.\n"
+        "\n"
+        "In both modes, set 'language' to the programming language the snippet should "
+        "be written in (infer it from the request; default to python if unclear)."
     ),
 )
 

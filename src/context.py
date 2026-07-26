@@ -54,11 +54,13 @@ def mark_task_done(ctx: RunContextWrapper[PipelineContext], summary: str) -> str
     return "Error: no active task to mark done."
 
 
-@function_tool
+@function_tool(needs_approval=True)
 def save_code_to_file(ctx: RunContextWrapper[PipelineContext], code: str) -> str:
     """Save the given code to disk. Only call this if the user's request explicitly
     asked for the code to be saved/written to a file. A save directory may or may
     not be configured; if it isn't, this will tell you so.
+
+    This tool requires human approval — the run will pause before this executes.
 
     Args:
         code: The complete, final code to save.
